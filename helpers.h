@@ -11,6 +11,7 @@
  *     DIE(fd == -1, "open failed");
  */
 
+
 #define DIE(assertion, call_description)	\
 	do {									\
 		if (assertion) {					\

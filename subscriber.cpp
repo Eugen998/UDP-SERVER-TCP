@@ -15,6 +15,14 @@ void usage(char *file)
 	exit(0);
 }
 
+void parse(char s[], char action[], char topic[], int *SF){
+	   char *aux = strtok(s, " ");
+	   strcpy(action, aux);
+	   aux = strtok(NULL, " ");
+	   strcpy(topic, aux);
+	   *SF = atoi(strtok(NULL, " "));
+}
+
 int main(int argc, char *argv[])
 {
 	int sockfd, n, ret;
@@ -63,15 +71,31 @@ int main(int argc, char *argv[])
 					// se citeste de la tastatura
 					memset(buffer, 0, BUFLEN);
 					fgets(buffer, BUFLEN, stdin);
-					printf("[SUBSCRIBER] Am citit de la tastatura: %s\n", buffer);
+					printf("[SUBSCRIBER]: %s\n", buffer);
 
 					if (strcmp(buffer, "exit\n") == 0) {
 						exit(0);
-					}
+					} else {
+						char action[20], topic[20];
+						int SF;
+						char cpy[20];
+						strcpy(cpy,buffer);
+						parse(cpy, action, topic, &SF);
+						if(strcmp(action, "subscribe") != 0 && strcmp(action, "unsubscribe") != 0){
+							printf("Actiunea introdusa nu este valida\n");
+							break;
+						}
+						if(SF != 0 && SF != 1){
+							printf("Indicele de store&forward poate fi doar 0 sau 1\n");
+							break;
+						}
+						// se trimite mesaj la server
+						printf("mesajul: %s\n",buffer);
+						n = send(sockfd, buffer, strlen(buffer), 0);
+						DIE(n < 0, "send");
+						printf("%s %s",action,topic);
 
-					// se trimite mesaj la server
-					n = send(sockfd, buffer, strlen(buffer), 0);
-					DIE(n < 0, "send");
+					}
 
 				} else if(j == sockfd) {
 					// se citeste de pe socket

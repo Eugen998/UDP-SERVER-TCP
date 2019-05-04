@@ -14,10 +14,12 @@ void usage(char *file)
 	exit(0);
 }
 
-void parse(char s[], char s1[], char s2[], int *sf){
-		s1 = strtok(s," ");
-		s2 = strtok(NULL," ");
-		*sf = atoi(strtok(NULL," "));
+void parse(char s[], char action[], char topic[], int *SF){
+		char *aux = strtok(s, " ");
+		strcpy(action, aux);
+		aux = strtok(NULL, " ");
+		strcpy(topic, aux);
+		*SF = atoi(strtok(NULL, " "));
 }
 
 int main(int argc, char *argv[])
@@ -129,13 +131,8 @@ int main(int argc, char *argv[])
 						char action[20], topic[20];
 						int SF;
 
-						//parse(start, action, topic, &SF);
-						char *aux = strtok(start, " ");
-						printf("Action: %s\n",aux);
-						aux = strtok(NULL, " ");
-						printf("Topic: %s\n", aux);
-						int sf = atoi(strtok(NULL, " "));
-						printf("SF: %d\n",sf);
+						parse(start, action, topic, &SF);
+						printf("Client (%d) %sd to (%s)\n", i, action, topic);
 
 
 
