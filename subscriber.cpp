@@ -62,11 +62,11 @@ int main(int argc, char *argv[])
 				if(j == STDIN_FILENO) {
 					// se citeste de la tastatura
 					memset(buffer, 0, BUFLEN);
-					fgets(buffer, BUFLEN - 1, stdin);
-					printf("[SUBSCRIBER] Am citit de la tastatura: %s.\n", buffer);
+					fgets(buffer, BUFLEN, stdin);
+					printf("[SUBSCRIBER] Am citit de la tastatura: %s\n", buffer);
 
-					if (strcmp(buffer, "exit") == 0) {
-						break;
+					if (strcmp(buffer, "exit\n") == 0) {
+						exit(0);
 					}
 
 					// se trimite mesaj la server

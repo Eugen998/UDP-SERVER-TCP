@@ -14,6 +14,12 @@ void usage(char *file)
 	exit(0);
 }
 
+void parse(char s[], char s1[], char s2[], int *sf){
+		s1 = strtok(s," ");
+		s2 = strtok(NULL," ");
+		*sf = atoi(strtok(NULL," "));
+}
+
 int main(int argc, char *argv[])
 {
 	int sockfd, newsockfd, udp_sockfd, portno;
@@ -89,12 +95,18 @@ int main(int argc, char *argv[])
 						fdmax = newsockfd;
 					}
 
-					printf("Noua conexiune de la %s, port %d, socket subscriber %d, id %d\n",
-							inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port), newsockfd, cli_id);
+					// printf("Noua conexiune de la %s, port %d, socket subscriber %d, id %d\n",
+					// 		inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port), newsockfd, cli_id);
+					printf("New Client (%d) connected from %s:%d\n",
+					cli_id,inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+				} else if (i == STDIN_FILENO){
+					memset(buffer, 0, BUFLEN);
+					fgets(buffer, BUFLEN, stdin);
+					if(strcmp(buffer, "exit\n")) exit(0);
 				} else if(i == udp_sockfd){
 					memset(buffer, 0, BUFLEN);
 					recvfrom(i, buffer, BUFLEN, 0, (struct sockaddr*) &serv_addr,0);
-					printf("MEsaj de la udp : %s\n", buffer);
+					printf("Mesaj de la udp : %s\n", buffer);
 				} else {
 					// s-au primit date pe unul din socketii de subscriber,
 					// asa ca serverul trebuie sa le receptioneze
@@ -104,9 +116,8 @@ int main(int argc, char *argv[])
 
 					if (n == 0) {
 						// conexiunea s-a inchis
-						printf("Socket-ul subscriber %d a inchis conexiunea\n", i);
+						printf("Client (%d) disconnected\n", i);
 						close(i);
-
 						// se scoate din multimea de citire socketul inchis
 						FD_CLR(i, &read_fds);
 					} else {
@@ -115,14 +126,28 @@ int main(int argc, char *argv[])
 						start = buffer;
 						printf ("S-a primit de la subscriberul de pe socketul %d mesajul: %s\n", i, start);
 
-						char number[5];
-						strncpy(number, buffer, start - buffer);
-						number[start - buffer] = '\0';
-						int descript = atoi(number);
+						char action[20], topic[20];
+						int SF;
 
-						if(FD_ISSET(descript, &read_fds)) {
-							send(descript, start + 1, strlen(start + 1), 0);
-						}
+						//parse(start, action, topic, &SF);
+						char *aux = strtok(start, " ");
+						printf("Action: %s\n",aux);
+						aux = strtok(NULL, " ");
+						printf("Topic: %s\n", aux);
+						int sf = atoi(strtok(NULL, " "));
+						printf("SF: %d\n",sf);
+
+
+
+						//
+						// char number[5];
+						// strncpy(number, buffer, start - buffer);
+						// number[start - buffer] = '\0';
+						// int descript = atoi(number);
+						//
+						// if(FD_ISSET(descript, &read_fds)) {
+						// 	send(descript, start + 1, strlen(start + 1), 0);
+						// }
 					}
 				}
 			}
