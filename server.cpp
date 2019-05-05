@@ -14,13 +14,6 @@ void usage(char *file)
 	exit(0);
 }
 
-void parse(char s[], char action[], char topic[], int *SF){
-		char *aux = strtok(s, " ");
-		strcpy(action, aux);
-		aux = strtok(NULL, " ");
-		strcpy(topic, aux);
-		*SF = atoi(strtok(NULL, " "));
-}
 
 int main(int argc, char *argv[])
 {
@@ -29,16 +22,16 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serv_addr, cli_addr;
 	int n, i, ret;
 	socklen_t clilen;
+	vector<client> subscribers;
 
-	fd_set read_fds;	// multimea de citire folosita in select()
-	fd_set tmp_fds;		// multime folosita temporar
-	int fdmax;			// valoare maxima fd din multimea read_fds
+	fd_set read_fds;	// multimea de citire
+	fd_set tmp_fds;		// multime folosita pentru a clona read_fds
+	int fdmax;			// valoare maxima fd
 
 	if (argc < 2) {
 		usage(argv[0]);
 	}
 
-	// se goleste multimea de descriptori de citire (read_fds) si multimea temporara (tmp_fds)
 	FD_ZERO(&read_fds);
 	FD_ZERO(&tmp_fds);
 
@@ -73,7 +66,6 @@ int main(int argc, char *argv[])
 
 	while (1) {
 		tmp_fds = read_fds;
-
 		ret = select(fdmax + 1, &tmp_fds, NULL, NULL, NULL);
 		DIE(ret < 0, "select");
 
@@ -84,11 +76,14 @@ int main(int argc, char *argv[])
 					// pe care serverul o accepta
 					clilen = sizeof(cli_addr);
 					newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+					DIE(newsockfd < 0, "accept");
+
 					memset(buffer, 0, BUFLEN);
 					n = recv(newsockfd, buffer, sizeof(buffer),0);
 					DIE(n < 0, "recv_id");
-					int cli_id = atoi(buffer);
-					DIE(newsockfd < 0, "accept");
+
+					char cli_id[20];
+					strcpy(cli_id, buffer);
 
 					// se adauga noul socket intors de accept() la multimea descriptorilor de citire
 					FD_SET(newsockfd, &read_fds);
@@ -97,10 +92,14 @@ int main(int argc, char *argv[])
 						fdmax = newsockfd;
 					}
 
-					// printf("Noua conexiune de la %s, port %d, socket subscriber %d, id %d\n",
-					// 		inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port), newsockfd, cli_id);
-					printf("New Client (%d) connected from %s:%d\n",
+					client current;
+					strcpy(current.id, cli_id);
+					current.fd = newsockfd;
+					subscribers.push_back(current);	//se adauga clientul in vectorul de clienti
+
+					printf("New Client (%s) connected from %s : %d\n",
 					cli_id,inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+
 				} else if (i == STDIN_FILENO){
 					memset(buffer, 0, BUFLEN);
 					fgets(buffer, BUFLEN, stdin);
@@ -118,33 +117,23 @@ int main(int argc, char *argv[])
 
 					if (n == 0) {
 						// conexiunea s-a inchis
-						printf("Client (%d) disconnected\n", i);
-						close(i);
+						client rem = get_client(subscribers,i);
+						printf("Client (%s) disconnected\n", rem.id);
 						// se scoate din multimea de citire socketul inchis
+						close(i);
 						FD_CLR(i, &read_fds);
+						//se sterge clientul din vectorul de clienti
+						erase_client(subscribers,rem);
 					} else {
-
 						char *start;
 						start = buffer;
-						printf ("S-a primit de la subscriberul de pe socketul %d mesajul: %s\n", i, start);
-
 						char action[20], topic[20];
 						int SF;
 
 						parse(start, action, topic, &SF);
-						printf("Client (%d) %sd to (%s)\n", i, action, topic);
+						client aux = get_client(subscribers,i);
+						printf("Client (%s) %sd to (%s)\n", aux.id, action, topic);
 
-
-
-						//
-						// char number[5];
-						// strncpy(number, buffer, start - buffer);
-						// number[start - buffer] = '\0';
-						// int descript = atoi(number);
-						//
-						// if(FD_ISSET(descript, &read_fds)) {
-						// 	send(descript, start + 1, strlen(start + 1), 0);
-						// }
 					}
 				}
 			}
