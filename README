@@ -1,0 +1,70 @@
+TEMA 2 PROTOCOALE DE COMUNICATIE
+
+COSTIN EUGEN
+
+GRUPA 324CC
+
+Dificultate - 7/10
+
+Timp de lucru - 3 zile/20 ore lucratoare
+
+subscriber.c:
+
+Mentiune: Nu am implementat programul cu store&forward, dar
+asta nu schimba cu nimic forma instructilor de subscribe/unsubscribe.
+
+Fisierul subscriber.cpp este scris in c++, si are rolul de a simula un
+client de TCP, care se va conecta la server.
+Executabilul asteapta de la tastatura comenzi, pentru a interactiona
+cu serverul. Comenzile posibile sunt urmatoarele:
+
+"exit" - inchide clientul TCP din fereastra curenta
+"subscribe topic_name SF" - se aboneaza la topicul topic_name
+"unsubscribe topic_name" - se dezaboneaza de la topicul topic_name
+
+Mentiune: Pentru a nu primi segmentation fault, comenzile de mai sus
+trebuie scrise exact cum le-am scris eu, cu un enter la final, fara
+spatii in plus sau in minus. Un mesaj care nu are formatul corect
+nu va fi luat in seama, si se va afisa un log de atentionare.
+
+subscriber.cpp trimite catre server id-ul clientului.
+
+subscriber.cpp primeste de la tastatura sau de la server mesaje,
+si le afiseaza.
+
+Mesajele de subscribe/unsubscribe/exit sunt trimise catre server in
+forma lor initiala.
+
+server.c:
+
+Serverul are cel mai important rol in aceasta tema. In primul rand,
+are rolul de a multiplexa conexiunile TCP si UDP, si de a le pune in
+legatura.
+
+Se deschid socketii aferenti conexiunilor TCP si UDP, si apoi se
+primesc mesaje. Se pot primi mesaje fie de la TCP fie de la UDP.
+
+Mesajele de la UDP se parseaza si se decide ce actiune se va efectua.
+Pentru subscribe si unsubscribe, se verifica daca topicul despre
+care este vorba exista deja sau nu. In cazul in care acesta nu exista,
+se va crea. Nu este posibila operatiunea de unsubscribe de la un topic
+inexistent. Nu este posibila operatiunea de unsubscribe de la un topic
+existent a unui client care nu este abonat la el. Este ignorata operatiunea
+de subscribe a unui client la un topic daca acesta era deja abonat.
+
+Cazurile descrise mai sus sunt tratate special, si sunt insotite de log-uri
+pentru evitarea erorilor.
+
+Pentru a memora clientii activi TCP, in server.cpp am implementat un
+vector std de structuri de tip client. Structura de tip client memoreaza
+id-ul si socketul pe care este conectat un client.
+
+Pentru a memora topic-urile existente, am implementat un vector std
+de structuri de tip topic_structure. structura de tip topic_structure
+memoreaza numele topicului si o lista de clienti care sunt abonati la el.
+
+helpers.h:
+
+Fisier de tip header care contine implementarile functiilor pentru operatii
+pe structurile definite mai sus, si a functiilor de parsare a textului.
+Fiecare functie este insotita de comentarii sugestive in cod.
