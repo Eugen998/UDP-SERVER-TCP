@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 						exit(0);
 					} else {
 						char action[20], topic[20];
-						int SF;
+						int SF = 0;
 						char cpy[20];
 
 						strcpy(cpy,buffer);
@@ -87,10 +87,8 @@ int main(int argc, char *argv[])
 						}
 
 						// se trimite mesaj la server
-						printf("mesajul: %s\n",buffer);
 						n = send(sockfd, buffer, strlen(buffer), 0);
 						DIE(n < 0, "send");
-						printf("%s %s",action,topic);	//log pentru afisarea actiunii efectuate
 
 					}
 

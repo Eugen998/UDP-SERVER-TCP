@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	int n, i, ret;
 	socklen_t clilen;
 	vector<client> subscribers;
+	vector<topic_structure> topics;
 
 	fd_set read_fds;	// multimea de citire
 	fd_set tmp_fds;		// multime folosita pentru a clona read_fds
@@ -124,16 +125,34 @@ int main(int argc, char *argv[])
 						FD_CLR(i, &read_fds);
 						//se sterge clientul din vectorul de clienti
 						erase_client(subscribers,rem);
+						//erase client from all topics
 					} else {
 						char *start;
 						start = buffer;
 						char action[20], topic[20];
-						int SF;
+						int SF = 0;
 
 						parse(start, action, topic, &SF);
 						client aux = get_client(subscribers,i);
 						printf("Client (%s) %sd to (%s)\n", aux.id, action, topic);
 
+						if(topic_exists(topics,topic)){	//daca topicul exista deja
+							if(strcmp(action,"subscribe") == 0)
+								add_subscriber_to_topic(topics, topic, aux);
+							else{
+								remove_subscriber_from_topic(topics, topic, aux);
+							}
+						}else{
+							if(strcmp(action,"subscribe") == 0){
+								add_topic(topics,topic);
+								add_subscriber_to_topic(topics,topic,aux);
+							}else{
+								printf("Given topic does not exist; Unable to perform action\n");
+							}
+
+						}
+
+						print_subs(topics);
 					}
 				}
 			}
