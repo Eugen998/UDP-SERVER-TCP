@@ -49,8 +49,7 @@ int main(int argc, char *argv[])
 
 	char id_buff[20];
 	strcpy(id_buff,argv[1]);
-	printf("Id ul clientului este %s \n",id_buff);
-	ret = send(sockfd, id_buff, strlen(id_buff), 0);
+	ret = send(sockfd, id_buff, strlen(id_buff), 0);	//se trimite id-ul catre server
 	DIE(ret < 0, "send id");
 
 	while (1) {
@@ -63,12 +62,11 @@ int main(int argc, char *argv[])
 					// se citeste de la tastatura
 					memset(buffer, 0, BUFLEN);
 					fgets(buffer, BUFLEN, stdin);
-					printf("[SUBSCRIBER]: %s\n", buffer);
 
 					if (strcmp(buffer, "exit\n") == 0) {
-						exit(0);
+						exit(0);	//inchide clientul
 					} else {
-						char action[20], topic[20];
+						char action[100], topic[50];
 						int SF = 0;
 						char cpy[20];
 
@@ -93,13 +91,12 @@ int main(int argc, char *argv[])
 					}
 
 				} else if(j == sockfd) {
-					// se citeste de pe socket
+					// se citeste de la server
 					memset(buffer, 0, BUFLEN);
             		n = recv(sockfd, buffer, sizeof(buffer), 0);
             		if(n == 0) {
               			return -1;
             		} else {
-              			printf("[SUBSCRIBER] Am citit de la server mesajul:\n");
               			printf("%s\n", buffer);
             		}
 				}

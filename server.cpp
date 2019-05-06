@@ -18,7 +18,7 @@ void usage(char *file)
 int main(int argc, char *argv[])
 {
 	int sockfd, newsockfd, udp_sockfd, portno;
-	char buffer[BUFLEN];
+	char buffer[BUFLEN], udp_buffer[600];
 	struct sockaddr_in serv_addr, cli_addr;
 	int n, i, ret;
 	socklen_t clilen;
@@ -51,10 +51,10 @@ int main(int argc, char *argv[])
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 
 	ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr));
-	DIE(ret < 0, "bind tcp");
+	DIE(ret < 0, "bind tcp");	//bind pentru TCP
 
 	ret = bind(udp_sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr));
-	DIE(ret < 0, "bind udp");
+	DIE(ret < 0, "bind udp");	//bind pentru UDP
 
 	ret = listen(sockfd, MAX_SUBSCRIBERS);
 	DIE(ret < 0, "listen");
@@ -62,8 +62,10 @@ int main(int argc, char *argv[])
 	// se adauga noul file descriptor (socketul pe care se asculta conexiuni) in multimea read_fds
 	FD_SET(sockfd, &read_fds);	//pt tcp
 	FD_SET(udp_sockfd, &read_fds);	//pt udp
+	FD_SET(STDIN_FILENO, &read_fds); //pt citirea de la tastatura
 
-	fdmax = sockfd > udp_sockfd ? sockfd : udp_sockfd;
+	int aux = sockfd > udp_sockfd ? sockfd : udp_sockfd;
+	fdmax = aux > STDIN_FILENO ? aux : STDIN_FILENO;	//pentru a determina socketul maxim
 
 	while (1) {
 		tmp_fds = read_fds;
@@ -73,8 +75,7 @@ int main(int argc, char *argv[])
 		for (i = 0; i <= fdmax; i++) {
 			if (FD_ISSET(i, &tmp_fds)) {
 				if (i == sockfd) {
-					// a venit o cerere de conexiune pe socketul inactiv (cel cu listen),
-					// pe care serverul o accepta
+					//s-au primesc date pe socketul de listen
 					clilen = sizeof(cli_addr);
 					newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 					DIE(newsockfd < 0, "accept");
@@ -104,14 +105,13 @@ int main(int argc, char *argv[])
 				} else if (i == STDIN_FILENO){
 					memset(buffer, 0, BUFLEN);
 					fgets(buffer, BUFLEN, stdin);
-					if(strcmp(buffer, "exit\n")) exit(0);
+					if(strcmp(buffer, "exit\n") == 0) exit(0);
 				} else if(i == udp_sockfd){
-					memset(buffer, 0, BUFLEN);
-					recvfrom(i, buffer, BUFLEN, 0, (struct sockaddr*) &serv_addr,0);
-					printf("Mesaj de la udp : %s\n", buffer);
+					memset(udp_buffer, 0, 1600);
+					recvfrom(i, udp_buffer, 1600, 0, (struct sockaddr*) &serv_addr,0);
+					forward_message(topics, udp_buffer, inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
 				} else {
-					// s-au primit date pe unul din socketii de subscriber,
-					// asa ca serverul trebuie sa le receptioneze
+					// s-au primit date pe unul din socketii clientilor TCP
 					memset(buffer, 0, BUFLEN);
 					n = recv(i, buffer, sizeof(buffer), 0);
 					DIE(n < 0, "recv");
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 					} else {
 						char *start;
 						start = buffer;
-						char action[20], topic[20];
+						char action[100], topic[51];
 						int SF = 0;
 
 						parse(start, action, topic, &SF);
@@ -149,10 +149,7 @@ int main(int argc, char *argv[])
 							}else{
 								printf("Given topic does not exist; Unable to perform action\n");
 							}
-
 						}
-
-						print_subs(topics);
 					}
 				}
 			}
