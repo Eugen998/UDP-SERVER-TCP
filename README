@@ -63,6 +63,10 @@ Pentru a memora topic-urile existente, am implementat un vector std
 de structuri de tip topic_structure. structura de tip topic_structure
 memoreaza numele topicului si o lista de clienti care sunt abonati la el.
 
+Se citeste de la UDP un mesaj, si se apeleaza functia forward_message, care are
+rolul de a parsa mesajul si de a-l trimite clientilor corespunzatori, in formatul
+dorit.
+
 helpers.h:
 
 Fisier de tip header care contine implementarile functiilor pentru operatii

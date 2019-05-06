@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 int i;
@@ -102,6 +103,7 @@ void print_subs(vector<topic_structure> v){
 	}
 }
 
+//returneaza topicul dorit, impreuna cu lista sa de subscriberi
 topic_structure get_topic(vector <topic_structure> v, char topic[]){
 	topic_structure aux;
 	for(i = 0; i < v.size(); i++){
@@ -109,7 +111,7 @@ topic_structure get_topic(vector <topic_structure> v, char topic[]){
 		if(strcmp(aux.name,topic) == 0) return aux;
 	}
 }
-
+//functie care parseaza mesajele de la clientii UDP si le trimite in forma dorita catre clientii TCP
 void forward_message(vector<topic_structure> &v, char buffer[], char ip[], int port){
 	char topic[51], content[1501], send_message[1600];
 	int type, sign, ret;
@@ -127,6 +129,7 @@ void forward_message(vector<topic_structure> &v, char buffer[], char ip[], int p
 	type = buffer[50];
 
 	if(type == 0){
+		//INT
 		int sign = buffer[51];
 		uint32_t value0;
 		memset(&value0, 0, sizeof(uint32_t));
@@ -137,6 +140,7 @@ void forward_message(vector<topic_structure> &v, char buffer[], char ip[], int p
 		memset(send_message, 0 , 1600);
 		sprintf(send_message, "%s : %d - %s - INT - %d", ip, port, topic, int_value0);
 	} else if (type == 1){
+		//SHORT_REAL
 		uint16_t value1;
 		memset(&value1, 0, sizeof(uint16_t));
 		memcpy(&value1, buffer + 51, sizeof(uint16_t));
@@ -145,10 +149,28 @@ void forward_message(vector<topic_structure> &v, char buffer[], char ip[], int p
 		memset(send_message, 0 , 1600);
 		sprintf(send_message, "%s : %d - %s - SHORT_REAL - %d", ip, port, topic, int_value1);
 	} else if (type == 2){
+		//FLOAT
 		memset(content, 0, 1500);
 		memset(send_message, 0 , 1600);
-		strcpy(send_message, "2 not yet");
+		int sign = buffer[51];
+
+		uint32_t value2;
+		memset(&value2, 0, sizeof(uint32_t));
+		memcpy(&value2, buffer + 52, sizeof(uint32_t));
+		int number = ntohl(value2);
+
+		uint8_t exp;
+		memset(&exp, 0, sizeof(uint8_t));
+		memcpy(&exp, buffer + 52 + sizeof(uint32_t), sizeof(uint8_t));
+
+		float to_send = number/(pow(10,exp));
+
+		if(sign == 1) to_send = to_send * (-1);
+
+		sprintf(send_message, "%s : %d - %s - FLOAT - %.8g", ip, port, topic, to_send);
+
 	} else if (type == 3){
+		//STRING
 		memset(content, 0, 1501);
 		memset(send_message, 0 , 1600);
 		memcpy(content, buffer + 51, 1501);
